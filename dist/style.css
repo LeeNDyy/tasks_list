@@ -1,0 +1,63 @@
+.task {
+    background: #2f3136;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    color: #dcddde;
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.task-actions button {
+    background: none;
+    border: none;
+    color: #dcddde;
+    cursor: pointer;
+    margin-left: 5px;
+    font-size: 16px;
+}
+
+.task-actions button:hover {
+    color: #fff;
+}
+
+.edit-form {
+    margin-top: 10px;
+    padding: 10px;
+    background: #36393f;
+    border-radius: 5px;
+}
+
+.edit-form input,
+.edit-form textarea {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #40444b;
+    border: none;
+    border-radius: 3px;
+    color: #dcddde;
+}
+
+.edit-form button {
+    padding: 5px 10px;
+    margin-right: 5px;
+    background: #5865f2;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.edit-form button:hover {
+    background: #4752c4;
+}
+
+.error {
+    color: #f04747;
+}

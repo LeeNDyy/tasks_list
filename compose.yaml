@@ -5,9 +5,14 @@ services:
     ports:
       - 8080:80
     volumes:
-      - ./config/balancer:/etc/hginx/templates
-    
-    centrifugo:
+      - ./config/balancer:/etc/nginx/templates
+      - ./dist:/var/www/dist
+    networks:
+      - appnet
+    depends_on:
+      - backend
+
+  centrifugo:
     image: centrifugo/centrifugo:v6.1
     command: centrifugo -c config.json
     ports:
@@ -18,9 +23,41 @@ services:
       nofile:
         soft: 65535
         hard: 65535
+    networks:
+      - appnet
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/back.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "7080:7080"
+    environment:
+      - PORT=7080
+    volumes:
+      - ./backend:/app
+    networks:
+      - appnet
+    
+  
+#   database:
+#     image: postgres:17.4-alpine3.21
+#     restart: unless-stopped
+#     ports:
+#        - 127.0.0.1:5433:5432
+#     environment:
+#      - POSTGRES_USER=${DB_USER}
+#      - POSTGRES_PASSWORD=${DB_PASS}
+#      - POSTGRES_DB=${DB_NAME}
+#     volumes:
+#      - database-data:/var/lib/postgresql/data
+
+# volumes:
+#  database-data:
+
+networks:
+  appnet:
+    driver: bridge
+
       
-    backend:
-      build:
-        context: .
-        dockerfile: ./backend/back.Dockerfile
-      restart: unless-stopped

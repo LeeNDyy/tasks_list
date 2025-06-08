@@ -13,4 +13,4 @@ tasks:
   restart:
     cmds:
       - task: up
-      - tasl: down
+      - task: down
