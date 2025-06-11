@@ -61,3 +61,46 @@
 .error {
     color: #f04747;
 }
+
+.task-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .task-content {
+    flex-grow: 1;
+  }
+  
+  .task-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .btn-edit, .btn-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+  }
+  
+  .btn-edit { color: #ffc107; }
+  .btn-delete { color: #dc3545; }
+  
+  .alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 15px;
+    border-radius: 5px;
+    color: white;
+    z-index: 1000;
+  }
+  
+  .alert-success { background: #28a745; }
+  .alert-error { background: #dc3545; }

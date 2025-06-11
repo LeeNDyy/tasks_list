@@ -40,6 +40,8 @@
       padding: 8px;
       border: 1px solid #ddd;
       border-radius: 4px;
+      width: 100%;
+      box-sizing: border-box;
     }
     button {
       padding: 8px 16px;
@@ -78,6 +80,13 @@
       padding: 10px;
       background: #e9ecef;
       border-radius: 4px;
+    }
+    .edit-form input,
+    .edit-form textarea {
+      margin-bottom: 10px;
+    }
+    .edit-form .btn-primary {
+      margin-right: 10px;
     }
   </style>
 </head>
@@ -184,8 +193,10 @@
               <div class="edit-form" id="edit-form-${task.id}">
                 <input type="text" id="edit-title-${task.id}" value="${task.title}" required />
                 <textarea id="edit-desc-${task.id}" required rows="2">${task.description}</textarea>
-                <button onclick="saveTask(${task.id})" class="btn-primary">Save</button>
-                <button onclick="cancelEdit(${task.id})" class="btn-danger">Cancel</button>
+                <div>
+                  <button onclick="saveTask(${task.id})" class="btn-primary">Save</button>
+                  <button onclick="cancelEdit(${task.id})" class="btn-danger">Cancel</button>
+                </div>
               </div>
             </div>
             <div class="task-actions">

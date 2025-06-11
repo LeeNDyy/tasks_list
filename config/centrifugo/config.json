@@ -1,30 +1,9 @@
 {
-    "client": {
-       "allowed_origins": [
-          "*"
-       ],
-       "proxy": {
-          "connect": {
-             "enabled": true,
-             "endpoint": "grpc://host.docker.internal:10000"
-          }
-       }
-    },
-    "http_api": {
-       "key": "my_api_key"
-    },
-    "admin": {
-       "password": "password",
-       "secret": "secret",
-       "enabled": true
-    },
-    "channel": {
-       "without_namespace": {
-          "allow_subscribe_for_client": true,
-          "allow_subscribe_for_anonymous": true,
-          "allow_publish_for_subscriber": true,
-          "allow_publish_for_client": true,
-          "allow_publish_for_anonymous": true
-       }
-    }
+   "token_hmac_secret_key": "pop",
+   "admin_password": "admin123",
+   "api_key": "${CENTRIFUGO_API_KEY}",
+   "allowed_origins": ["*"],
+   "proxy_http_headers": ["Authorization"],
+   "history_size": 10,
+   "history_ttl": "300s"
  }

@@ -1,144 +1,193 @@
-// Селекторы DOM
-const tasksContainer = document.getElementById("tasks");
-const createBtn = document.getElementById("createTask");
-const taskTitle = document.getElementById("taskTitle");
-const taskDesc = document.getElementById("taskDesc");
+// Импортируем Centrifuge (если используете модули)
+// import { Centrifuge } from 'centrifuge';
 
-// Загружаем задачи при загрузке страницы
+// Конфигурация Centrifugo
+const centrifugo = new Centrifuge('ws://localhost:8000/connection/websocket', {
+  // token: "USER_TOKEN" // Раскомментировать если требуется аутентификация
+});
+
+// DOM элементы
+const taskList = document.getElementById('task-list');
+const taskForm = document.getElementById('task-form');
+const titleInput = document.getElementById('title');
+const descInput = document.getElementById('description');
+
+// Подключение к Centrifugo
+centrifugo.connect();
+
+// Подписка на канал задач
+const sub = centrifugo.newSubscription('tasks');
+
+// Обработчики событий Centrifugo
+sub.on('publication', (ctx) => {
+  const event = ctx.data;
+  console.log('Получено событие:', event);
+  
+  switch(event.type) {
+    case 'created':
+      addTaskToDOM(event.task);
+      break;
+    case 'updated':
+      updateTaskInDOM(event.task);
+      break;
+    case 'deleted':
+      removeTaskFromDOM(event.taskId);
+      break;
+  }
+});
+
+sub.subscribe(); // Явно подписываемся на канал
+
+// Загрузка задач при старте
 document.addEventListener('DOMContentLoaded', loadTasks);
 
-// Функция загрузки задач
+// ============== Основные функции ============== //
+
+// Загрузка всех задач
 async function loadTasks() {
-    try {
-        const response = await fetch('/api/task');
-        if (!response.ok) throw new Error('Ошибка загрузки задач');
-        
-        const tasks = await response.json();
-        renderTasks(tasks);
-    } catch (err) {
-        console.error("Ошибка:", err);
-        tasksContainer.innerHTML = '<div class="error">Не удалось загрузить задачи</div>';
-    }
+  try {
+    const response = await fetch('/api/task');
+    if (!response.ok) throw new Error('Ошибка загрузки задач');
+    
+    const tasks = await response.json();
+    renderTasks(tasks);
+  } catch (err) {
+    console.error('Ошибка:', err);
+    taskList.innerHTML = '<li class="error">Не удалось загрузить задачи</li>';
+  }
 }
 
-// Функция отрисовки задач
+// Создание задачи
+async function createTask(e) {
+  e.preventDefault();
+  
+  const title = titleInput.value.trim();
+  const description = descInput.value.trim();
+
+  if (!title) {
+    showAlert('Введите заголовок задачи', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/task', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description })
+    });
+
+    if (!response.ok) throw new Error('Ошибка создания задачи');
+    
+    taskForm.reset();
+    showAlert('Задача создана!', 'success');
+  } catch (err) {
+    console.error('Ошибка:', err);
+    showAlert('Не удалось создать задачу', 'error');
+  }
+}
+
+// Обновление задачи
+async function updateTask(taskId) {
+  const title = prompt('Новый заголовок:');
+  if (!title) return;
+
+  const description = prompt('Новое описание:', 
+    document.querySelector(`.task-item[data-id="${taskId}"] p`).textContent);
+
+  try {
+    const response = await fetch(`/api/task/${taskId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description })
+    });
+
+    if (!response.ok) throw new Error('Ошибка обновления задачи');
+    showAlert('Задача обновлена!', 'success');
+  } catch (err) {
+    console.error('Ошибка:', err);
+    showAlert('Не удалось обновить задачу', 'error');
+  }
+}
+
+// Удаление задачи
+async function deleteTask(taskId) {
+  if (!confirm('Удалить задачу?')) return;
+  
+  try {
+    const response = await fetch(`/api/task/${taskId}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) throw new Error('Ошибка удаления задачи');
+    showAlert('Задача удалена!', 'success');
+  } catch (err) {
+    console.error('Ошибка:', err);
+    showAlert('Не удалось удалить задачу', 'error');
+  }
+}
+
+// ============== Вспомогательные функции ============== //
+
+// Отрисовка всех задач
 function renderTasks(tasks) {
-    tasksContainer.innerHTML = '';
-    
-    tasks.forEach(task => {
-        const taskElement = document.createElement('div');
-        taskElement.className = 'task';
-        taskElement.dataset.id = task.id;
-        taskElement.innerHTML = `
-            <div class="task-header">
-                <h3>#${task.id}: ${task.title}</h3>
-                <div class="task-actions">
-                    <button class="edit-btn" onclick="editTask(${task.id})">✏️</button>
-                    <button class="delete-btn" onclick="deleteTask(${task.id})">🗑️</button>
-                </div>
-            </div>
-            <p>${task.description}</p>
-            <div class="edit-form" id="edit-form-${task.id}" style="display: none;">
-                <input type="text" id="edit-title-${task.id}" value="${task.title}" required>
-                <textarea id="edit-desc-${task.id}" required>${task.description}</textarea>
-                <button onclick="saveTask(${task.id})">Сохранить</button>
-                <button onclick="cancelEdit(${task.id})">Отмена</button>
-            </div>
-        `;
-        tasksContainer.appendChild(taskElement);
-    });
+  taskList.innerHTML = '';
+  
+  if (tasks.length === 0) {
+    taskList.innerHTML = '<li>Нет задач. Создайте первую!</li>';
+    return;
+  }
+  
+  tasks.forEach(task => {
+    addTaskToDOM(task);
+  });
 }
 
-// Функция создания задачи
-async function createTask() {
-    const title = taskTitle.value.trim();
-    const description = taskDesc.value.trim();
-    
-    if (!title) {
-        alert("Пожалуйста, введите заголовок задачи");
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/task', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({title, description})
-        });
-        
-        if (!response.ok) throw new Error('Ошибка при создании задачи');
-        
-        const newTask = await response.json();
-        taskTitle.value = "";
-        taskDesc.value = "";
-        loadTasks(); // Перезагружаем список задач
-        
-    } catch (err) {
-        console.error("Ошибка:", err);
-        alert("Не удалось создать задачу");
-    }
+// Добавление задачи в DOM
+function addTaskToDOM(task) {
+  const taskEl = document.createElement('li');
+  taskEl.className = 'task-item';
+  taskEl.dataset.id = task.id;
+  taskEl.innerHTML = `
+    <div class="task-content">
+      <h3>${task.title}</h3>
+      <p>${task.description}</p>
+    </div>
+    <div class="task-actions">
+      <button class="btn-edit" onclick="updateTask(${task.id})">✏️</button>
+      <button class="btn-delete" onclick="deleteTask(${task.id})">🗑️</button>
+    </div>
+  `;
+  taskList.appendChild(taskEl);
 }
 
-// Глобальные функции для управления задачами
-window.editTask = function(id) {
-    // Скрываем все формы редактирования
-    document.querySelectorAll('.edit-form').forEach(form => {
-        form.style.display = 'none';
-    });
-    // Показываем нужную форму
-    document.getElementById(`edit-form-${id}`).style.display = 'block';
-};
+// Обновление задачи в DOM
+function updateTaskInDOM(task) {
+  const taskEl = document.querySelector(`.task-item[data-id="${task.id}"]`);
+  if (taskEl) {
+    taskEl.querySelector('h3').textContent = task.title;
+    taskEl.querySelector('p').textContent = task.description;
+  }
+}
 
-window.cancelEdit = function(id) {
-    document.getElementById(`edit-form-${id}`).style.display = 'none';
-};
+// Удаление задачи из DOM
+function removeTaskFromDOM(taskId) {
+  const taskEl = document.querySelector(`.task-item[data-id="${taskId}"]`);
+  if (taskEl) taskEl.remove();
+}
 
-window.saveTask = async function(id) {
-    const title = document.getElementById(`edit-title-${id}`).value.trim();
-    const description = document.getElementById(`edit-desc-${id}`).value.trim();
-    
-    if (!title) {
-        alert("Заголовок не может быть пустым");
-        return;
-    }
+// Показать уведомление
+function showAlert(message, type) {
+  const alert = document.createElement('div');
+  alert.className = `alert alert-${type}`;
+  alert.textContent = message;
+  document.body.appendChild(alert);
+  
+  setTimeout(() => alert.remove(), 3000);
+}
 
-    try {
-        const response = await fetch(`/api/task/${id}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({title, description})
-        });
-        
-        if (!response.ok) throw new Error('Ошибка при обновлении задачи');
-        
-        loadTasks(); // Перезагружаем список задач
-        
-    } catch (err) {
-        console.error("Ошибка:", err);
-        alert("Не удалось обновить задачу");
-    }
-};
+// ============== Обработчики событий ============== //
+taskForm.addEventListener('submit', createTask);
 
-window.deleteTask = async function(id) {
-    if (!confirm("Вы уверены, что хотите удалить эту задачу?")) return;
-    
-    try {
-        const response = await fetch(`/api/task/${id}`, {
-            method: 'DELETE'
-        });
-        
-        if (!response.ok) throw new Error('Ошибка при удалении задачи');
-        
-        loadTasks(); // Перезагружаем список задач
-        
-    } catch (err) {
-        console.error("Ошибка:", err);
-        alert("Не удалось удалить задачу");
-    }
-};
-
-// Обработчики событий
-createBtn.addEventListener("click", createTask);
-taskTitle.addEventListener("keypress", (e) => {
-    if (e.key === 'Enter') createTask();
-});
+// Делаем функции глобальными для обработчиков в HTML
+window.updateTask = updateTask;
+window.deleteTask = deleteTask;
